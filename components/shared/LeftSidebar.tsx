@@ -38,7 +38,7 @@ function LeftSidebar() {
             <div className = "mt-10 px-6">
             <SignedIn>
                    <SignOutButton>
-                    <div className="flex cursor-pointer">
+                    <div className="flex cursor-pointer gap-4 p-4">
                         <Image 
                             src="/assets/logout.svg" 
                             alt="logout" 
@@ -47,6 +47,7 @@ function LeftSidebar() {
                         />
                     </div>
                     </SignOutButton>  
+                    <p className = "text-light-2 max-lg:hidden">Logout</p>
                 </SignedIn>
             </div>
         </section>
