@@ -8,7 +8,8 @@ import '../globals.css'
 export const metadeta = {
     title: 'Threads',
     description: 'A Next.js 13 Meta Threads clone app'
-}
+};
+
 const inter = Inter({ subsets: ["latin"] })
 
 export default function RootLayout({ 
