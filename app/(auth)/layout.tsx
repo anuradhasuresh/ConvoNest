@@ -6,7 +6,7 @@ import '../globals.css'
 
 // useful for SEO
 export const metadeta = {
-    title: 'Threads',
+    title: 'ConvoNest',
     description: 'A Next.js 13 Meta Threads clone app'
 };
 
