@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useState } from "react";
 import { Textarea } from "../ui/textarea";
 
 interface ScriptProps {
@@ -33,13 +33,14 @@ interface ScriptProps {
 }
 
 const AccountProfile = ({user, btnTitle}: ScriptProps) => {
+    const [ files, setFiles ] = useState<File[]>([])
     const form = useForm({
         resolver: zodResolver(userValidation),
         defaultValues: {
-            profile_photo: "",
-            name: "",
-            username: "",
-            bio: "",
+            profile_photo: user?.image || "",
+            name: user?.name || "",
+            username: user?.username || "",
+            bio: user?.bio || "",
         }
     })
     function onSubmit(values: z.infer<typeof userValidation>) {
@@ -49,8 +50,22 @@ const AccountProfile = ({user, btnTitle}: ScriptProps) => {
       }
     
 
-    const handleImage = (e: ChangeEvent, fieldChange: (value: string) => void) => {
+    const handleImage = (e: ChangeEvent<HTMLInputElement>, fieldChange: (value: string) => void) => {
         e.preventDefault();
+
+        const fileReader = new FileReader();
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            setFiles(Array.from(e.target.files))
+
+            if(!file.type.includes('image')) return;
+
+            fileReader.onload = async(event) => {
+                const imageDataUrl = event.target?.result?.toString() || '';
+                fieldChange(imageDataUrl);
+            }
+            fileReader.readAsDataURL(file);
+        }
     }
 
     return (
@@ -101,11 +116,11 @@ const AccountProfile = ({user, btnTitle}: ScriptProps) => {
             control={form.control}
             name="name"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-3 w-full">
+              <FormItem className="flex flex-col w-full gap-3">
                 <FormLabel className="text-base-semibold text-light-2">
                     Name
                 </FormLabel>
-                <FormControl className="flex-1 text-base-semibold text-gray-200">
+                <FormControl>
                   <Input 
                         type="text"
                         className="account-form_input no-focus"
@@ -120,11 +135,11 @@ const AccountProfile = ({user, btnTitle}: ScriptProps) => {
             control={form.control}
             name="username"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-3 w-full">
+              <FormItem className="flex flex-col w-full gap-3">
                 <FormLabel className="text-base-semibold text-light-2">
                     Username
                 </FormLabel>
-                <FormControl className="flex-1 text-base-semibold text-gray-200">
+                <FormControl>
                   <Input 
                         type="text"
                         className="account-form_input no-focus"
@@ -139,11 +154,11 @@ const AccountProfile = ({user, btnTitle}: ScriptProps) => {
             control={form.control}
             name="bio"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-3 w-full">
+              <FormItem className="flex flex-col w-full gap-3">
                 <FormLabel className="text-base-semibold text-light-2">
                     Bio
                 </FormLabel>
-                <FormControl className="flex-1 text-base-semibold text-gray-200">
+                <FormControl>
                   <Textarea  
                         rows={10}
                         className="account-form_input no-focus"
