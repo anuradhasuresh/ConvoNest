@@ -8,7 +8,8 @@ import * as z from "zod";
 import Image from "next/image";
 import { isBase64Image } from "@/lib/utils";
 import { useUploadThing} from "@/lib/uploadthing"
-
+import { updateUser} from "@/lib/actions/user.actions";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Form,
   FormControl,
@@ -23,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { ChangeEvent, useState } from "react";
 import { Textarea } from "../ui/textarea";
 
-interface ScriptProps {
+interface Props {
     user: {
         id: string;
         objectId: string;
@@ -35,20 +36,20 @@ interface ScriptProps {
     btnTitle: string;
 }
 
-const AccountProfile = ({user, btnTitle}: ScriptProps) => {
+const AccountProfile = ({user, btnTitle}: Props) => {
   const [ files, setFiles ] = useState<File[]>([])
+  const router = useRouter();
+  const pathname = usePathname();
+
   const { startUpload, isUploading} = useUploadThing("imageUploader", {
     onClientUploadComplete: (res) => {
       console.log("Upload completed:", res);
-      // You might want to update the form or component state here
     },
     onUploadError: (error: Error) => {
       console.error("Upload error:", error);
-      // Handle the error, maybe show a notification to the user
     },
     onUploadProgress: (progress: number) => {
       console.log(`Upload progress: ${progress}%`);
-      // You could use this to update a progress bar
     },
   });
 
@@ -63,16 +64,32 @@ const AccountProfile = ({user, btnTitle}: ScriptProps) => {
   });
   
   const onSubmit = async (values: z.infer<typeof userValidation>) => {
-      const blob = values.profile_photo;
-      const hasImageChanged = isBase64Image(blob);
-      if (hasImageChanged) {
-        const imgRes = await startUpload(files);
+    const blob = values.profile_photo;
 
-        if (imgRes && imgRes[0].url) {
-          values.profile_photo = imgRes[0].url;
-        }
+    const hasImageChanged = isBase64Image(blob);
+    if (hasImageChanged) {
+      const imgRes = await startUpload(files);
+
+      if (imgRes && imgRes[0].url) {
+        values.profile_photo = imgRes[0].url;
       }
-  }
+    }
+
+    await updateUser({
+      name: values.name,
+      path: pathname,
+      username: values.username,
+      userId: user.id,
+      bio: values.bio,
+      image: values.profile_photo,
+    });
+
+    if (pathname === "/profile/edit") {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
     
   
 
