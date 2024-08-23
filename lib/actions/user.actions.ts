@@ -1,7 +1,7 @@
 "use server"
 
 import { connectToDB } from "../mongoose"
-import User from "../models/user.models";
+import User from "../models/user.model";
 import { revalidatePath } from "next/cache";
 
 interface Params {
@@ -23,7 +23,7 @@ export async function updateUser({
     } : Params) : Promise<void> {
 
     connectToDB();
-
+    console.log("called update")
     try {
         await User.findOneAndUpdate(
             { id: userId },
@@ -39,6 +39,7 @@ export async function updateUser({
         if( path === '/profile/edit') {
             revalidatePath(path);
         }
+    
     }
     catch (error: any) {
         throw new Error (`failed to create/ update user : ${error.message}`);
@@ -48,7 +49,7 @@ export async function fetchUser (userId : String) {
     try {
         connectToDB();
         return await User
-        .findOne({ id: userId})
+        .findOne({ id: userId })
         // .populate({
         //     path : 'communities',
         //     model : Community, 
