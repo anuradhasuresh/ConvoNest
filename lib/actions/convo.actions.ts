@@ -88,6 +88,87 @@ export async function fetchPosts(pageNumber = 1, pageSize = 20) {
   return { posts, isNext };
 }
 
+export async function fetchConvoById(convoId: string) {
+  connectToDB();
+
+  try {
+    const convo = await Convo.findById(convoId)
+      .populate({
+        path: "author",
+        model: User,
+        select: "_id id name image",
+      }) // Populate the author field with _id and username
+      // .populate({
+      //   path: "community",
+      //   model: Community,
+      //   select: "_id id name image",
+      // }) // Populate the community field with _id and name
+      .populate({
+        path: "children", // Populate the children field
+        populate: [
+          {
+            path: "author", // Populate the author field within children
+            model: User,
+            select: "_id id name parentId image", // Select only _id and username fields of the author
+          },
+          {
+            path: "children", // Populate the children field within children
+            model: Convo, // The model of the nested children (assuming it's the same "Convo" model)
+            populate: {
+              path: "author", // Populate the author field within nested children
+              model: User,
+              select: "_id id name parentId image", // Select only _id and username fields of the author
+            },
+          },
+        ],
+      })
+      .exec();
+
+    return convo;
+  } catch (err) {
+    console.error("Error while fetching convo:", err);
+    throw new Error("Unable to fetch convo");
+  }
+}
+
+export async function addCommentToConvo(
+  convoId: string,
+  commentText: string,
+  userId: string,
+  path: string
+) {
+  connectToDB();
+
+  try {
+    // Find the original convo by its ID
+    const originalConvo = await Convo.findById(convoId);
+
+    if (!originalConvo) {
+      throw new Error("Convo not found");
+    }
+
+    // Create the new comment convo
+    const commentConvo = new Convo({
+      text: commentText,
+      author: userId,
+      parentId: convoId, // Set the parentId to the original convo's ID
+    });
+
+    // Save the comment convo to the database
+    const savedCommentConvo = await commentConvo.save();
+
+    // Add the comment convo's ID to the original convo's children array
+    originalConvo.children.push(savedCommentConvo._id);
+
+    // Save the updated original Convo to the database
+    await originalConvo.save();
+
+    revalidatePath(path);
+  } catch (err) {
+    console.error("Error while adding comment:", err);
+    throw new Error("Unable to add comment");
+  }
+}
 // async function fetchAllChildConvos(convoId: string): Promise<any[]> {
 //   const childConvos= await Convo.find({ parentId: convoId });
 
@@ -156,84 +237,4 @@ export async function fetchPosts(pageNumber = 1, pageSize = 20) {
 //   }
 // }
 
-// export async function fetchConvoById(convoId: string) {
-//   connectToDB();
 
-//   try {
-//     const convo = await Convo.findById(convoId)
-//       .populate({
-//         path: "author",
-//         model: User,
-//         select: "_id id name image",
-//       }) // Populate the author field with _id and username
-//       .populate({
-//         path: "community",
-//         model: Community,
-//         select: "_id id name image",
-//       }) // Populate the community field with _id and name
-//       .populate({
-//         path: "children", // Populate the children field
-//         populate: [
-//           {
-//             path: "author", // Populate the author field within children
-//             model: User,
-//             select: "_id id name parentId image", // Select only _id and username fields of the author
-//           },
-//           {
-//             path: "children", // Populate the children field within children
-//             model: Convo, // The model of the nested children (assuming it's the same "Convo" model)
-//             populate: {
-//               path: "author", // Populate the author field within nested children
-//               model: User,
-//               select: "_id id name parentId image", // Select only _id and username fields of the author
-//             },
-//           },
-//         ],
-//       })
-//       .exec();
-
-//     return convo;
-//   } catch (err) {
-//     console.error("Error while fetching convo:", err);
-//     throw new Error("Unable to fetch convo");
-//   }
-// }
-
-// export async function addCommentToConvo(
-//   convoId: string,
-//   commentText: string,
-//   userId: string,
-//   path: string
-// ) {
-//   connectToDB();
-
-//   try {
-//     // Find the original convo by its ID
-//     const originalConvo = await Convo.findById(convoId);
-
-//     if (!originalConvo) {
-//       throw new Error("Convo not found");
-//     }
-
-//     // Create the new comment convo
-//     const commentConvo = new Convo({
-//       text: commentText,
-//       author: userId,
-//       parentId: convoId, // Set the parentId to the original convo's ID
-//     });
-
-//     // Save the comment convo to the database
-//     const savedCommentConvo = await commentConvo.save();
-
-//     // Add the comment convo's ID to the original convo's children array
-//     originalConvo.children.push(savedCommentConvo._id);
-
-//     // Save the updated original Convo to the database
-//     await originalConvo.save();
-
-//     revalidatePath(path);
-//   } catch (err) {
-//     console.error("Error while adding comment:", err);
-//     throw new Error("Unable to add comment");
-//   }
-// }
