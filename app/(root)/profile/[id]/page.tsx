@@ -11,27 +11,32 @@ import ProfileHeader from "@/components/shared/ProfileHeader";
 import { fetchUser } from "@/lib/actions/user.actions";
 
 async function Page({ params }: { params: { id: string } }) {
-  const user = await currentUser();
-  
-  if (!user) return null;
+  try {
+    const user = await currentUser();
+    if (!user) return null;
 
-//   const userInfo = await fetchUser(params.id);
-  const userInfo = await fetchUser(user.id);
-  if (!userInfo?.onboarded) redirect("/onboarding");
+    console.log("Fetching user with ID:", params.id);
+    const userInfo = await fetchUser(params.id);
+    // console.log("Fetched user info:", userInfo);
 
-  return (
-    <section>
-      <ProfileHeader
-        accountId={userInfo.id}
-        authUserId={user.id}
-        name={userInfo.name}
-        username={userInfo.username}
-        imgUrl={userInfo.image}
-        bio={userInfo.bio}
-      />
+    if (!userInfo) return <div>Profile not found</div>;
+    if (!userInfo.onboardedStatus) redirect("/onboarding");
 
-      
-    </section>
-  );
+    return (
+      <section>
+        <ProfileHeader
+          accountId={userInfo.id}
+          authUserId={user.id}
+          name={userInfo.name}
+          username={userInfo.username}
+          imgUrl={userInfo.image}
+          bio={userInfo.bio}
+        />
+      </section>
+    );
+  } catch (error) {
+    console.error("Error in profile page:", error);
+    return <div>An error occurred while loading the profile</div>;
+  }
 }
 export default Page;
