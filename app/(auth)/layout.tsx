@@ -8,11 +8,11 @@ import "../globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// useful for SEO
-export const metadeta : Metadata = {
-    title: 'ConvoNest',
-    description: 'A Next.js 13 Meta Threads clone app'
-};
+// // useful for SEO
+// export const metadeta : Metadata = {
+//     title: 'ConvoNest',
+//     description: 'A Next.js 13 Meta Threads clone app'
+// };
 
 export default function RootLayout({ 
     children 
