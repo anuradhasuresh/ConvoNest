@@ -149,3 +149,32 @@ export async function fetchUsers({
     throw error;
   }
 }
+
+export async function getActivity(userId: string) {
+  try {
+    connectToDB();
+
+    // Find all convos created by the user
+    const userConvos = await Convo.find({ author: userId });
+
+    // Collect all the child convo ids (replies) from the 'children' field of each user convo
+    const childConvoIds = userConvos.reduce((acc, userConvo) => {
+      return acc.concat(userConvo.children);
+    }, []);
+
+    // Find and return the child convos (replies) excluding the ones created by the same user
+    const replies = await Convo.find({
+      _id: { $in: childConvoIds },
+      author: { $ne: userId }, // Exclude convos authored by the same user
+    }).populate({
+      path: "author",
+      model: User,
+      select: "name image _id",
+    });
+
+    return replies;
+  } catch (error) {
+    console.error("Error fetching replies: ", error);
+    throw error;
+  }
+}
