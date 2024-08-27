@@ -1,16 +1,18 @@
-import { ClerkProvider } from "@clerk/nextjs"
-import { Inter } from "next/font/google"
-import React from "react"
+import React from "react";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
-import '../globals.css'
+import "../globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 // useful for SEO
-export const metadeta = {
+export const metadeta : Metadata = {
     title: 'ConvoNest',
     description: 'A Next.js 13 Meta Threads clone app'
 };
-
-const inter = Inter({ subsets: ["latin"] })
 
 export default function RootLayout({ 
     children 
