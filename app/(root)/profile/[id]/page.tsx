@@ -15,16 +15,16 @@ async function Page({ params }: { params: { id: string } }) {
     const user = await currentUser();
     if (!user) return null;
 
-    console.log("Fetching user with ID:", params.id);
+    // console.log("Fetching user with ID:", params.id);
     const userInfo = await fetchUser(params.id);
     console.log("Fetched user info:", userInfo);
 
-    if (!userInfo) return <div>Profile not found</div>;
-    if (!userInfo.onboardedStatus) redirect("/onboarding");
+    if (!userInfo) redirect("/onboarding");
+    if (!userInfo?.onboardedStatus) redirect("/onboarding");
 
     return (
       <section>
-        <p>Debug: Rendering profile page</p>
+        <p>Debug: Rendering profile page for {userInfo.username}</p>
         <ProfileHeader
           accountId={userInfo.id}
           authUserId={user.id}
@@ -46,8 +46,7 @@ async function Page({ params }: { params: { id: string } }) {
                     className='object-contain'
                   />
                   <p className='max-sm:hidden'>{tab.label}</p>
-
-                  {tab.label === "Convos" && (
+                  {tab.label === "Convos" && userInfo.convos && (
                     <p className='ml-1 rounded-sm bg-light-4 px-2 py-1 !text-tiny-medium text-light-2'>
                       {userInfo.convos.length}
                     </p>
@@ -55,18 +54,21 @@ async function Page({ params }: { params: { id: string } }) {
                 </TabsTrigger>
               ))}
             </TabsList>
-              {profileTabs.map((tab) => (
+            {profileTabs.map((tab) => (
               <TabsContent
                 key={`content-${tab.label}`}
                 value={tab.value}
                 className='w-full text-light-1'
               >
-                {/* @ts-ignore */}
-                <ThreadsTab
-                  currentUserId={user.id}
-                  accountId={userInfo.id}
-                  accountType='User'
-                />
+                {tab.value === 'convos' ? (
+                  <ThreadsTab
+                    currentUserId={user.id}
+                    accountId={userInfo.id}
+                    accountType='User'
+                  />
+                ) : (
+                  <p>Content for {tab.label} tab</p>
+                )}
               </TabsContent>
             ))}
           </Tabs>
@@ -75,7 +77,8 @@ async function Page({ params }: { params: { id: string } }) {
     );
   } catch (error) {
     console.error("Error in profile page:", error);
-    return <div>An error occurred while loading the profile</div>;
+    return <div>An error occurred while loading the profile: {(error as Error).message}</div>;
   }
 }
+
 export default Page;
