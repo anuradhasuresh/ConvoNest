@@ -17,13 +17,14 @@ async function Page({ params }: { params: { id: string } }) {
 
     console.log("Fetching user with ID:", params.id);
     const userInfo = await fetchUser(params.id);
-    // console.log("Fetched user info:", userInfo);
+    console.log("Fetched user info:", userInfo);
 
     if (!userInfo) return <div>Profile not found</div>;
     if (!userInfo.onboardedStatus) redirect("/onboarding");
 
     return (
       <section>
+        <p>Debug: Rendering profile page</p>
         <ProfileHeader
           accountId={userInfo.id}
           authUserId={user.id}
