@@ -61,7 +61,7 @@ export const POST = async (request: Request) => {
 
   const eventType: EventType = evnt?.type!;
 
-  // Listen for organization creation event
+  // Listen organization creation event
   if (eventType === "organization.created") {
     // Resource: https://clerk.com/docs/reference/backend-api/tag/Organizations#operation/CreateOrganization
     // Show what evnt?.data sends from above resource
@@ -90,7 +90,7 @@ export const POST = async (request: Request) => {
     }
   }
 
-  // Listen for organization invitation creation event.
+  // Listen organization invitation creation event.
   // Just to show. You can avoid this or tell people that we can create a new mongoose action and
   // add pending invites in the database.
   if (eventType === "organizationInvitation.created") {

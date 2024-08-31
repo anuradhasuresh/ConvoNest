@@ -2,15 +2,23 @@ import ThreadCard from "@/components/cards/ThreadCard";
 import { fetchPosts } from "@/lib/actions/convo.actions";
 import { fetchUser } from "@/lib/actions/user.actions";
 import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from 'next/navigation';
 
-export default async function Home() {
-
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | undefined };
+}) {
   const user = await currentUser();
   if (!user) return null;
-  const result = await fetchPosts(1, 30);
-    // searchParams.page ? +searchParams.page : 1,30
-  // );
-  console.log(result);
+
+  const userInfo = await fetchUser(user.id);
+  if (!userInfo?.onboardedStatus) redirect("/onboarding");
+
+  const result = await fetchPosts(
+    searchParams.page ? +searchParams.page : 1,
+    30
+  );
   return (
     <>
     <h1 className='head-text text-left'>Home</h1>

@@ -15,8 +15,10 @@ export async function createCommunity(
   image: string,
   bio: string,
   createdById: string // Change the parameter name to reflect it's an id
-) {
+) 
+{
   try {
+    console.log("createCommunity function called");
     connectToDB();
 
     // Find the user with the provided unique id
@@ -34,14 +36,15 @@ export async function createCommunity(
       bio,
       createdBy: user._id, // Use the mongoose ID of the user
     });
-
+    console.log("NEW COMMUNITY", newCommunity);
     const createdCommunity = await newCommunity.save();
-
+    console.log("COMMUNITY created", createCommunity);
     // Update User model
     user.communities.push(createdCommunity._id);
     await user.save();
 
     return createdCommunity;
+    
   } catch (error) {
     // Handle any errors
     console.error("Error creating community:", error);

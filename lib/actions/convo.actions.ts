@@ -1,52 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import { connectToDB } from "../mongoose";
 
 import User from "../models/user.model";
 import Convo from "../models/convo.model";
-// import Community from "../models/community.model";
-
-interface Params {
-  text: string,
-  author: string,
-  communityId: string | null,
-  path: string,
-}
-
-export async function createConvo({ text, author, communityId, path }: Params
-) {
-  try {
-    connectToDB();
-
-    // const communityIdObject = await Community.findOne(
-    //   { id: communityId },
-    //   { _id: 1 }
-    // );
-
-    const createdConvo= await Convo.create({
-      text,
-      author,
-      community: null, // Assign communityId if provided, or leave it null for personal account
-    });
-
-    // Update User model
-    await User.findByIdAndUpdate(author, {
-      $push: { convos: createdConvo._id },
-    });
-
-    // if (communityIdObject) {
-    //   // Update Community model
-    //   await Community.findByIdAndUpdate(communityIdObject, {
-    //     $push: { convos: createdConvo._id },
-    //   });
-    // }
-
-    revalidatePath(path);
-  } catch (error: any) {
-    throw new Error(`Failed to create convo: ${error.message}`);
-  }
-}
+import Community from "../models/community.model";
 
 export async function fetchPosts(pageNumber = 1, pageSize = 20) {
   connectToDB();
@@ -63,10 +23,10 @@ export async function fetchPosts(pageNumber = 1, pageSize = 20) {
       path: "author",
       model: User,
     })
-    // .populate({
-    //   path: "community",
-    //   model: Community,
-    // })
+    .populate({
+      path: "community",
+      model: Community,
+    })
     .populate({
       path: "children", // Populate the children field
       populate: {
@@ -88,21 +48,130 @@ export async function fetchPosts(pageNumber = 1, pageSize = 20) {
   return { posts, isNext };
 }
 
-export async function fetchConvoById(convoId: string) {
+interface Params {
+  text: string,
+  author: string,
+  communityId: string | null,
+  path: string,
+}
+
+export async function createConvo({ text, author, communityId, path }: Params
+) {
+  try {
+    connectToDB();
+
+    const communityIdObject = await Community.findOne(
+      { id: communityId },
+      { _id: 1 }
+    );
+
+    const createdConvo = await Convo.create({
+      text,
+      author,
+      community: communityIdObject, // Assign communityId if provided, or leave it null for personal account
+    });
+
+    // Update User model
+    await User.findByIdAndUpdate(author, {
+      $push: { convos: createdConvo._id },
+    });
+
+    if (communityIdObject) {
+      // Update Community model
+      await Community.findByIdAndUpdate(communityIdObject, {
+        $push: { convos: createdConvo._id },
+      });
+    }
+
+    revalidatePath(path);
+  } catch (error: any) {
+    throw new Error(`Failed to create convo: ${error.message}`);
+  }
+}
+
+async function fetchAllChildConvos(convoId: string): Promise<any[]> {
+  const childConvos = await Convo.find({ parentId: convoId });
+
+  const descendantConvos = [];
+  for (const childConvo of childConvos) {
+    const descendants = await fetchAllChildConvos(childConvo._id);
+    descendantConvos.push(childConvo, ...descendants);
+  }
+
+  return descendantConvos;
+}
+
+export async function deleteConvo(id: string, path: string): Promise<void> {
+  try {
+    connectToDB();
+
+    // Find the convo to be deleted (the main convo)
+    const mainConvo = await Convo.findById(id).populate("author community");
+
+    if (!mainConvo) {
+      throw new Error("Convo not found");
+    }
+
+    // Fetch all child convos and their descendants recursively
+    const descendantConvos = await fetchAllChildConvos(id);
+
+    // Get all descendant convo IDs including the main convo ID and child convo IDs
+    const descendantConvoIds = [
+      id,
+      ...descendantConvos.map((convo) => convo._id),
+    ];
+
+    // Extract the authorIds and communityIds to update User and Community models respectively
+    const uniqueAuthorIds = new Set(
+      [
+        ...descendantConvos.map((convo) => convo.author?._id?.toString()), // Use optional chaining to handle possible undefined values
+        mainConvo.author?._id?.toString(),
+      ].filter((id) => id !== undefined)
+    );
+
+    const uniqueCommunityIds = new Set(
+      [
+        ...descendantConvos.map((convo) => convo.community?._id?.toString()), // Use optional chaining to handle possible undefined values
+        mainConvo.community?._id?.toString(),
+      ].filter((id) => id !== undefined)
+    );
+
+    // Recursively delete child convos and their descendants
+    await Convo.deleteMany({ _id: { $in: descendantConvoIds } });
+
+    // Update User model
+    await User.updateMany(
+      { _id: { $in: Array.from(uniqueAuthorIds) } },
+      { $pull: { convos : { $in: descendantConvoIds } } }
+    );
+
+    // Update Community model
+    await Community.updateMany(
+      { _id: { $in: Array.from(uniqueCommunityIds) } },
+      { $pull: { convos : { $in: descendantConvoIds } } }
+    );
+
+    revalidatePath(path);
+  } catch (error: any) {
+    throw new Error(`Failed to delete convo: ${error.message}`);
+  }
+}
+
+export async function fetchConvoById(ConvoId: string) {
   connectToDB();
 
   try {
-    const convo = await Convo.findById(convoId)
+    const convo = await Convo.findById(ConvoId)
       .populate({
         path: "author",
         model: User,
         select: "_id id name image",
       }) // Populate the author field with _id and username
-      // .populate({
-      //   path: "community",
-      //   model: Community,
-      //   select: "_id id name image",
-      // }) // Populate the community field with _id and name
+      .populate({
+        path: "community",
+        model: Community,
+        select: "_id id name image",
+      }) // Populate the community field with _id and name
       .populate({
         path: "children", // Populate the children field
         populate: [
@@ -160,7 +229,7 @@ export async function addCommentToConvo(
     // Add the comment convo's ID to the original convo's children array
     originalConvo.children.push(savedCommentConvo._id);
 
-    // Save the updated original Convo to the database
+    // Save the updated original convo to the database
     await originalConvo.save();
 
     revalidatePath(path);
@@ -169,72 +238,3 @@ export async function addCommentToConvo(
     throw new Error("Unable to add comment");
   }
 }
-// async function fetchAllChildConvos(convoId: string): Promise<any[]> {
-//   const childConvos= await Convo.find({ parentId: convoId });
-
-//   const descendantConvos = [];
-//   for (const childConvo of childConvos) {
-//     const descendants = await fetchAllChildConvos(childConvo._id);
-//     descendantConvos.push(childConvo, ...descendants);
-//   }
-
-//   return descendantConvos;
-// }
-
-// export async function deleteConvo(id: string, path: string): Promise<void> {
-//   try {
-//     connectToDB();
-
-//     // Find the convo to be deleted (the main convo)
-//     const mainConvo = await Convo.findById(id).populate("author community");
-
-//     if (!mainConvo) {
-//       throw new Error("Convo not found");
-//     }
-
-//     // Fetch all child convos and their descendants recursively
-//     const descendantConvos = await fetchAllChildConvos(id);
-
-//     // Get all descendant convo IDs including the main convo ID and child convo IDs
-//     const descendantConvoIds = [
-//       id,
-//       ...descendantConvos.map((convo) => convo._id),
-//     ];
-
-//     // Extract the authorIds and communityIds to update User and Community models respectively
-//     const uniqueAuthorIds = new Set(
-//       [
-//         ...descendantConvos.map((convo) => convo.author?._id?.toString()), // Use optional chaining to handle possible undefined values
-//         mainConvo.author?._id?.toString(),
-//       ].filter((id) => id !== undefined)
-//     );
-
-//     const uniqueCommunityIds = new Set(
-//       [
-//         ...descendantConvos.map((convo) => convo.community?._id?.toString()), // Use optional chaining to handle possible undefined values
-//         mainConvo.community?._id?.toString(),
-//       ].filter((id) => id !== undefined)
-//     );
-
-//     // Recursively delete child convos and their descendants
-//     await Convo.deleteMany({ _id: { $in: descendantConvoIds } });
-
-//     // Update User model
-//     await User.updateMany(
-//       { _id: { $in: Array.from(uniqueAuthorIds) } },
-//       { $pull: { convos: { $in: descendantConvoIds } } }
-//     );
-
-//     // Update Community model
-//     await Community.updateMany(
-//       { _id: { $in: Array.from(uniqueCommunityIds) } },
-//       { $pull: { convos: { $in: descendantConvoIds } } }
-//     );
-
-//     revalidatePath(path);
-//   } catch (error: any) {
-//     throw new Error(`Failed to delete convo: ${error.message}`);
-//   }
-// }
-
-
