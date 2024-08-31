@@ -4,6 +4,10 @@
 
 // Resource: https://docs.svix.com/receiving/verifying-payloads/why
 // It's a good practice to verify webhooks. Above article shows why we should do it
+
+// if communities are not working or endpoint tests are failing - remove vercel authentication in project deployment protection,
+// change endpoint to api/webhooks on clerk dashboard and change folder route to app/api/webhooks/route.ts
+
 import { Webhook, WebhookRequiredHeaders } from "svix";
 import { headers } from "next/headers";
 
