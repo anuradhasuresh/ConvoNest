@@ -8,7 +8,7 @@ import * as z from "zod";
 import Image from "next/image";
 import { isBase64Image } from "@/lib/utils";
 import { useUploadThing} from "@/lib/uploadthing"
-import { updateUser} from "@/lib/actions/user.actions";
+import { updateUser } from "@/lib/actions/user.actions";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Form,
@@ -90,9 +90,7 @@ const AccountProfile = ({user, btnTitle}: Props) => {
       router.push("/");
     }
   };
-    
   
-
   const handleImage = (e: ChangeEvent<HTMLInputElement>, fieldChange: (value: string) => void) => {
       e.preventDefault();
 

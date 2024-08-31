@@ -1,36 +1,36 @@
 import { redirect } from "next/navigation";
 
-// import { fetchCommunityPosts } from "@/lib/actions/community.actions";
+import { fetchCommunityPosts } from "@/lib/actions/community.actions";
 import { fetchUserPosts } from "@/lib/actions/user.actions";
 
 import ThreadCard from "../cards/ThreadCard";
 
-// interface Result {
-//   name: string;
-//   image: string;
-//   id: string;
-//   convos: {
-//     _id: string;
-//     text: string;
-//     parentId: string | null;
-//     author: {
-//       name: string;
-//       image: string;
-//       id: string;
-//     };
-//     // community: {
-//     //   id: string;
-//     //   name: string;
-//     //   image: string;
-//     // } | null;
-//     createdAt: string;
-//     children: {
-//       author: {
-//         image: string;
-//       };
-//     }[];
-//   }[];
-// }
+interface Result {
+  name: string;
+  image: string;
+  id: string;
+  convos: {
+    _id: string;
+    text: string;
+    parentId: string | null;
+    author: {
+      name: string;
+      image: string;
+      id: string;
+    };
+    community: {
+      id: string;
+      name: string;
+      image: string;
+    } | null;
+    createdAt: string;
+    children: {
+      author: {
+        image: string;
+      };
+    }[];
+  }[];
+}
 
 interface Props {
   currentUserId: string;
@@ -39,14 +39,14 @@ interface Props {
 }
 
 async function ThreadsTab({ currentUserId, accountId, accountType }: Props) {
-  // let result: Result;
-  let result = await fetchUserPosts(accountId);
+  let result: Result;
+  // let result = await fetchUserPosts(accountId);
 
-  // if (accountType === "Community") {
-  //   result = await fetchCommunityPosts(accountId);
-  // } else {
-  //   result = await fetchUserPosts(accountId);
-  // }
+  if (accountType === "Community") {
+    result = await fetchCommunityPosts(accountId);
+  } else {
+    result = await fetchUserPosts(accountId);
+  }
 
   if (!result) {
     redirect("/");
