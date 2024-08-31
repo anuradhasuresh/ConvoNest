@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { deleteConvo } from "@/lib/actions/convo.actions";
 import { useState } from "react";
 
@@ -22,11 +22,14 @@ function DeleteThread({
 }: Props) {
   const pathname = usePathname();
   const [showAlert, setShowAlert] = useState(false);
-
+  const router = useRouter();
   if (currentUserId !== authorId || pathname === "/") return null;
 
   const handleDelete = async () => {
     await deleteConvo(JSON.parse(convoId), pathname);
+    if (!parentId || !isComment) {
+      router.push("/");
+    }
     setShowAlert(true);
     setTimeout(() => setShowAlert(false), 3000); // Hide alert after 3 seconds
   };
